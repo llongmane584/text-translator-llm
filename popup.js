@@ -27,10 +27,10 @@ document.addEventListener('DOMContentLoaded', function() {
       'lmStudioModel'
     ], (result) => {
       targetLanguageSelect.value = result.targetLanguage || 'en';
-      llmProviderSelect.value = result.llmProvider || 'openai';
+      llmProviderSelect.value = result.llmProvider || 'ollama';
       autoTranslateCheckbox.checked = result.autoTranslate !== false;
       
-      createProviderSettings(result.llmProvider || 'openai', result);
+      createProviderSettings(result.llmProvider || 'ollama', result);
       updateStatus();
     });
   }
@@ -61,11 +61,11 @@ document.addEventListener('DOMContentLoaded', function() {
       ],
       ollama: [
         { key: 'ollamaUrl', label: 'Ollama URL', type: 'text', placeholder: 'http://localhost:11434' },
-        { key: 'ollamaModel', label: 'モデル名', type: 'text', placeholder: 'llama2' }
+        { key: 'ollamaModel', label: 'モデル名', type: 'text', placeholder: 'gemma2:9b' }
       ],
       lmstudio: [
         { key: 'lmStudioUrl', label: 'LM Studio URL', type: 'text', placeholder: 'http://localhost:1234' },
-        { key: 'lmStudioModel', label: 'モデル名', type: 'text', placeholder: 'local-model' }
+        { key: 'lmStudioModel', label: 'モデル名', type: 'text', placeholder: 'gemma2:9b' }
       ]
     };
     
@@ -108,14 +108,22 @@ document.addEventListener('DOMContentLoaded', function() {
     chrome.storage.sync.set(settings, () => {
       updateStatus();
       
-      chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'settingsUpdated',
-            settings: settings
-          });
-        }
-      });
+      // 設定更新をcontent scriptに通知（エラーハンドリング付き）
+      try {
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+          if (tabs && tabs[0] && tabs[0].id) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'settingsUpdated',
+              settings: settings
+            }).catch((error) => {
+              // content scriptが読み込まれていない場合などのエラーを無視
+              // このエラーは正常で、拡張機能の動作には影響しません
+            });
+          }
+        });
+      } catch (error) {
+        // tabs APIのエラーも無視（拡張機能設定ページなどでは正常）
+      }
     });
   }
   

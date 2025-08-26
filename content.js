@@ -248,8 +248,10 @@ function translateText(text) {
     }, (response) => {
       if (response && response.translation) {
         updateTranslationResult(response.translation);
+      } else if (response && response.error) {
+        updateTranslationResult(`エラー: ${response.error}`);
       } else {
-        updateTranslationResult('翻訳に失敗しました。');
+        updateTranslationResult('翻訳に失敗しました。設定を確認してください。');
       }
     });
   });
@@ -298,3 +300,49 @@ document.addEventListener('keydown', (e) => {
     removeTranslatorIcon();
   }
 });
+
+// バックグラウンドスクリプトからのメッセージを受信
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  if (request.action === 'showTranslation') {
+    selectedText = request.originalText;
+    showFloatingTranslatorWithTranslation(request.originalText, request.translation);
+    sendResponse({ success: true });
+  }
+});
+
+// コンテキストメニューからの翻訳結果を表示
+function showFloatingTranslatorWithTranslation(originalText, translation) {
+  removeTranslatorIcon();
+  removeFloatingTranslator();
+  
+  floatingTranslator = document.createElement('div');
+  floatingTranslator.className = 'floating-translator';
+  floatingTranslator.innerHTML = `
+    <div class="floating-translator-header">
+      <span class="floating-translator-title">Text Translator LLM</span>
+      <button class="close-btn" onclick="removeFloatingTranslator()">&times;</button>
+    </div>
+    <div class="floating-translator-content">
+      <div class="text-section">
+        <label>原文:</label>
+        <div class="text-content">${originalText}</div>
+      </div>
+      <div class="text-section">
+        <label>翻訳結果:</label>
+        <div class="text-content translation-content">${translation}</div>
+      </div>
+    </div>
+    <div class="floating-translator-actions">
+      <button class="action-btn" onclick="copyTranslation()">コピー</button>
+      <button class="action-btn primary-btn" onclick="removeFloatingTranslator()">閉じる</button>
+    </div>
+  `;
+  
+  // 画面中央に配置
+  floatingTranslator.style.position = 'fixed';
+  floatingTranslator.style.left = '50%';
+  floatingTranslator.style.top = '50%';
+  floatingTranslator.style.transform = 'translate(-50%, -50%)';
+  
+  document.body.appendChild(floatingTranslator);
+}

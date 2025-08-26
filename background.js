@@ -31,7 +31,7 @@ async function translateText(text, targetLanguage) {
       ], resolve);
     });
 
-    const provider = settings.llmProvider || 'openai';
+    const provider = settings.llmProvider || 'ollama';
     const translation = await callTranslationAPI(text, targetLanguage, provider, settings);
     return translation;
   } catch (error) {
@@ -166,33 +166,72 @@ async function callGemini(text, targetLanguage, apiKey) {
 // Ollama
 async function callOllama(text, targetLanguage, url, model) {
   const baseUrl = url || 'http://localhost:11434';
-  const modelName = model || 'llama2';
+  const modelName = model || 'gemma2:9b';
   
-  const systemPrompt = `You are a professional translator. Translate text to ${targetLanguage} accurately. Return ONLY the translation.`;
-  const userPrompt = `${systemPrompt}\n\nTranslate: ${text}`;
-  
-  const response = await fetch(`${baseUrl}/api/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: modelName,
-      prompt: userPrompt,
-      stream: false,
-      options: {
-        temperature: 0.1,
-        num_predict: 500
-      }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Ollama エラー: ${response.status}`);
+  if (!modelName) {
+    throw new Error('Ollamaモデル名が設定されていません');
   }
+  
+  const prompt = `You are a professional translator. Translate the following text to ${targetLanguage} accurately and naturally. Return ONLY the translation without any explanations, comments, or additional text.\n\nText to translate: ${text}`;
+  
+  const requestUrl = `${baseUrl}/api/generate`;
+  const requestBody = {
+    model: modelName,
+    prompt: prompt,
+    stream: false,
+    options: {
+      temperature: 0.1,
+      num_predict: 500
+    }
+  };
 
-  const data = await response.json();
-  return data.response.trim();
+  console.log('=== Ollama API Debug ===');
+  console.log('Request URL:', requestUrl);
+  console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+  console.log('Model:', modelName);
+  console.log('Base URL:', baseUrl);
+  
+  try {
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log('Response Status:', response.status);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('Error Response Body:', errorText);
+      
+      if (response.status === 404) {
+        throw new Error(`Ollamaモデル '${modelName}' が見つかりません。モデルをダウンロードするか、設定を確認してください。`);
+      }
+      if (response.status === 403) {
+        throw new Error(`Ollama API アクセス拒否 (403): OLLAMA_ORIGINS=* を設定してOllamaを起動してください。`);
+      }
+      throw new Error(`Ollama API エラー: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Response Data:', data);
+    
+    if (!data.response) {
+      console.log('Invalid response - missing response field');
+      throw new Error('Ollamaからの応答が無効です');
+    }
+    
+    console.log('Translation Result:', data.response);
+    return data.response.trim();
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Ollamaサーバーに接続できません。http://localhost:11434 で実行されていることを確認してください。');
+    }
+    throw error;
+  }
 }
 
 // LM Studio
@@ -236,11 +275,11 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.set({
     targetLanguage: 'en',
     autoTranslate: true,
-    llmProvider: 'openai',
+    llmProvider: 'ollama',
     ollamaUrl: 'http://localhost:11434',
-    ollamaModel: 'llama2',
+    ollamaModel: 'gemma2:9b',
     lmStudioUrl: 'http://localhost:1234',
-    lmStudioModel: 'local-model'
+    lmStudioModel: 'gemma2:9b'
   });
 
   // コンテキストメニューの追加
@@ -266,6 +305,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         })
         .catch(error => {
           console.error('Context menu translation error:', error);
+          chrome.tabs.sendMessage(tab.id, {
+            action: 'showTranslation',
+            originalText: info.selectionText,
+            translation: `翻訳エラー: ${error.message}`
+          });
         });
     });
   }
