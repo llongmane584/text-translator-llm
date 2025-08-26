@@ -102,12 +102,17 @@ document.addEventListener('DOMContentLoaded', function() {
           const reloadBtn = document.createElement('button');
           reloadBtn.type = 'button';
           reloadBtn.textContent = '更新';
-          reloadBtn.style.marginLeft = '5px';
+          reloadBtn.className = 'model-reload-btn';
           reloadBtn.addEventListener('click', () => loadLMStudioModels(input, currentValues.lmStudioUrl));
           
+          // コンテナ要素を作成してFlexレイアウト適用
+          const selectorContainer = document.createElement('div');
+          selectorContainer.className = 'model-selector-container';
+          selectorContainer.appendChild(input);
+          selectorContainer.appendChild(reloadBtn);
+          
           div.appendChild(label);
-          div.appendChild(input);
-          div.appendChild(reloadBtn);
+          div.appendChild(selectorContainer);
           
           // 初回読み込み
           loadLMStudioModels(input, currentValues.lmStudioUrl);
@@ -157,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
           }
         });
-      } catch (error) {
+      } catch {
         // tabs APIのエラーも無視（拡張機能設定ページなどでは正常）
       }
     });
