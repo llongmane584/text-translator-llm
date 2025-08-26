@@ -3,6 +3,145 @@ let floatingTranslator = null;
 let selectedText = '';
 let selectionRange = null;
 
+// CSSスタイルをページに注入
+function injectStyles() {
+  if (document.getElementById('translator-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'translator-styles';
+  style.textContent = `
+    .translator-icon {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: #1a73e8;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 10000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .translator-icon:hover {
+      background: #1557b0;
+      transform: scale(1.1);
+    }
+    .translator-icon::before {
+      content: "翻";
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .floating-translator {
+      position: absolute;
+      min-width: 300px;
+      max-width: 400px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      z-index: 10001;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      border: 1px solid #dadce0;
+    }
+    .floating-translator-header {
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-radius: 8px 8px 0 0;
+      border-bottom: 1px solid #dadce0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .floating-translator-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #666;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .close-btn:hover {
+      color: #333;
+    }
+    .floating-translator-content {
+      padding: 16px;
+    }
+    .text-section {
+      margin-bottom: 16px;
+    }
+    .text-section label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .text-content {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #333;
+      border: 1px solid #e8eaed;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .translation-content {
+      background: #e8f5e8;
+      border: 1px solid #c8e6c9;
+    }
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+    .floating-translator-actions {
+      padding: 12px 16px;
+      border-top: 1px solid #dadce0;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .action-btn {
+      padding: 6px 12px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      background: white;
+      font-size: 13px;
+      cursor: pointer;
+      color: #333;
+    }
+    .action-btn:hover {
+      background: #f8f9fa;
+    }
+    .primary-btn {
+      background: #1a73e8;
+      color: white;
+      border-color: #1a73e8;
+    }
+    .primary-btn:hover {
+      background: #1557b0;
+      border-color: #1557b0;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// ページ読み込み時にスタイルを注入
+injectStyles();
+
 // テキスト選択の監視
 document.addEventListener('mouseup', handleTextSelection);
 document.addEventListener('keyup', handleTextSelection);

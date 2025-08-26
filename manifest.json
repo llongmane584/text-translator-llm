@@ -5,7 +5,17 @@
   "description": "A Chrome extension for translating text using LLM",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "http://localhost:1234/*",
+    "http://localhost:11434/*",
+    "http://127.0.0.1:1234/*",
+    "http://127.0.0.1:11434/*"
   ],
   "action": {
     "default_popup": "popup.html",

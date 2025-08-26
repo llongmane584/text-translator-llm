@@ -232,6 +232,7 @@ async function callLMStudio(text, targetLanguage, url, model) {
 
 // 拡張機能インストール時の初期設定
 chrome.runtime.onInstalled.addListener(() => {
+  // 初期設定
   chrome.storage.sync.set({
     targetLanguage: 'en',
     autoTranslate: true,
@@ -241,10 +242,8 @@ chrome.runtime.onInstalled.addListener(() => {
     lmStudioUrl: 'http://localhost:1234',
     lmStudioModel: 'local-model'
   });
-});
 
-// コンテキストメニューの追加
-chrome.runtime.onInstalled.addListener(() => {
+  // コンテキストメニューの追加
   chrome.contextMenus.create({
     id: 'translateSelected',
     title: 'このテキストを翻訳',
