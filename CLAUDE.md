@@ -43,8 +43,8 @@ The extension supports both cloud and local LLM providers:
 - Google Gemini (gemini-pro)
 
 **Local Providers:**
-- Ollama (default: http://localhost:11434 with llama2 model)
-- LM Studio (default: http://localhost:1234 with local-model)
+- Ollama (default: http://localhost:11434 with gemma2:9b model)
+- LM Studio (default: http://localhost:1234 with REST API v0)
 
 Each provider has its own API implementation with standardized error handling and response processing.
 
@@ -72,9 +72,9 @@ Each provider has its own API implementation with standardized error handling an
 API keys and settings are stored in Chrome's sync storage. Default settings:
 - Target language: English (en)
 - Auto-translate: enabled
-- Default provider: OpenAI
+- Default provider: Ollama  
 - Ollama URL: http://localhost:11434
-- LM Studio URL: http://localhost:1234
+- LM Studio URL: http://localhost:1234 (REST API v0)
 
 ### File Structure
 
@@ -101,9 +101,18 @@ ollama serve
 ```
 
 ### LM Studio Setup
-1. Download and install LM Studio
-2. Load a model and start local server
-3. Configure extension with correct URL and model name
+1. Download and install LM Studio (requires version 0.3.6 or newer)
+2. Load a model in LM Studio
+3. Start the REST API server:
+   ```bash
+   lms server start
+   ```
+   Or use the GUI to start the server (default: http://localhost:1234)
+4. Configure extension:
+   - Select "LM Studio" as provider in popup settings
+   - Verify URL (default: http://localhost:1234)  
+   - Use the "更新" button to load available models dynamically
+   - Select a loaded model from the dropdown
 
 ## Common Issues
 

@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ],
       lmstudio: [
         { key: 'lmStudioUrl', label: 'LM Studio URL', type: 'text', placeholder: 'http://localhost:1234' },
-        { key: 'lmStudioModel', label: 'モデル名', type: 'text', placeholder: 'gemma2:9b' }
+        { key: 'lmStudioModel', label: 'モデル名', type: 'select', placeholder: 'local-model', loadModels: true }
       ]
     };
     
@@ -78,15 +78,61 @@ document.addEventListener('DOMContentLoaded', function() {
         const label = document.createElement('label');
         label.textContent = setting.label;
         
-        const input = document.createElement('input');
-        input.type = setting.type;
-        input.id = setting.key;
-        input.placeholder = setting.placeholder;
-        input.value = currentValues[setting.key] || '';
-        input.addEventListener('input', saveSettings);
+        let input;
+        if (setting.type === 'select' && setting.loadModels) {
+          input = document.createElement('select');
+          input.id = setting.key;
+          
+          // デフォルトオプション
+          const defaultOption = document.createElement('option');
+          defaultOption.value = '';
+          defaultOption.textContent = '-- モデルを選択 --';
+          input.appendChild(defaultOption);
+          
+          // 現在の値があれば追加
+          if (currentValues[setting.key]) {
+            const currentOption = document.createElement('option');
+            currentOption.value = currentValues[setting.key];
+            currentOption.textContent = currentValues[setting.key];
+            currentOption.selected = true;
+            input.appendChild(currentOption);
+          }
+          
+          // モデルリロードボタン
+          const reloadBtn = document.createElement('button');
+          reloadBtn.type = 'button';
+          reloadBtn.textContent = '更新';
+          reloadBtn.className = 'model-reload-btn';
+          reloadBtn.addEventListener('click', () => {
+            // リアルタイムでURL値を取得
+            const urlInput = document.getElementById('lmStudioUrl');
+            const currentUrl = urlInput ? urlInput.value : (currentValues.lmStudioUrl || 'http://localhost:1234');
+            loadLMStudioModels(input, currentUrl);
+          });
+          
+          // コンテナ要素を作成してFlexレイアウト適用
+          const selectorContainer = document.createElement('div');
+          selectorContainer.className = 'model-selector-container';
+          selectorContainer.appendChild(input);
+          selectorContainer.appendChild(reloadBtn);
+          
+          div.appendChild(label);
+          div.appendChild(selectorContainer);
+          
+          // 初回読み込み
+          loadLMStudioModels(input, currentValues.lmStudioUrl);
+        } else {
+          input = document.createElement('input');
+          input.type = setting.type;
+          input.id = setting.key;
+          input.placeholder = setting.placeholder;
+          input.value = currentValues[setting.key] || '';
+          
+          div.appendChild(label);
+          div.appendChild(input);
+        }
         
-        div.appendChild(label);
-        div.appendChild(input);
+        input.addEventListener('change', saveSettings);
         providerSettingsDiv.appendChild(div);
       });
     }
@@ -121,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
           }
         });
-      } catch (error) {
+      } catch {
         // tabs APIのエラーも無視（拡張機能設定ページなどでは正常）
       }
     });
@@ -163,5 +209,60 @@ document.addEventListener('DOMContentLoaded', function() {
       'de': 'ドイツ語'
     };
     return languages[code] || code;
+  }
+  
+  // LM Studio モデル一覧を読み込み
+  function loadLMStudioModels(selectElement, url) {
+    const baseUrl = url || 'http://localhost:1234';
+    
+    // 現在選択中の値を保存
+    const currentSelectedValue = selectElement.value;
+    
+    // 読み込み中表示
+    selectElement.innerHTML = '';
+    const loadingOption = document.createElement('option');
+    loadingOption.textContent = '読み込み中...';
+    selectElement.appendChild(loadingOption);
+    
+    chrome.runtime.sendMessage({
+      action: 'getLMStudioModels',
+      url: baseUrl
+    }, (response) => {
+      selectElement.innerHTML = '';
+      
+      // デフォルトオプション
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- モデルを選択 --';
+      selectElement.appendChild(defaultOption);
+      
+      if (response && response.models) {
+        response.models.forEach(model => {
+          const option = document.createElement('option');
+          option.value = model.id;
+          option.textContent = `${model.id} ${model.loaded ? '(ロード済み)' : ''}`;
+          selectElement.appendChild(option);
+        });
+        
+        // 選択状態を復元（優先順位：現在選択値 > 保存済み設定値）
+        if (currentSelectedValue && currentSelectedValue !== '') {
+          selectElement.value = currentSelectedValue;
+        } else if (chrome.storage && chrome.storage.sync) {
+          chrome.storage.sync.get(['lmStudioModel'], (result) => {
+            if (result.lmStudioModel) {
+              selectElement.value = result.lmStudioModel;
+            }
+          });
+        }
+      } else if (response && response.error) {
+        const errorOption = document.createElement('option');
+        errorOption.textContent = `エラー: ${response.error}`;
+        selectElement.appendChild(errorOption);
+      } else {
+        const noModelsOption = document.createElement('option');
+        noModelsOption.textContent = 'モデルが見つかりません';
+        selectElement.appendChild(noModelsOption);
+      }
+    });
   }
 });
