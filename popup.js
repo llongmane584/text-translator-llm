@@ -145,8 +145,8 @@ document.addEventListener('DOMContentLoaded', function() {
       autoTranslate: autoTranslateCheckbox.checked
     };
     
-    // プロバイダー固有の設定を収集
-    const providerInputs = providerSettingsDiv.querySelectorAll('input');
+    // プロバイダー固有の設定を収集（inputとselectの両方）
+    const providerInputs = providerSettingsDiv.querySelectorAll('input, select');
     providerInputs.forEach(input => {
       settings[input.id] = input.value;
     });
@@ -218,51 +218,60 @@ document.addEventListener('DOMContentLoaded', function() {
     // 現在選択中の値を保存
     const currentSelectedValue = selectElement.value;
     
-    // 読み込み中表示
-    selectElement.innerHTML = '';
-    const loadingOption = document.createElement('option');
-    loadingOption.textContent = '読み込み中...';
-    selectElement.appendChild(loadingOption);
-    
-    chrome.runtime.sendMessage({
-      action: 'getLMStudioModels',
-      url: baseUrl
-    }, (response) => {
+    // Chrome storageから保存済み設定値を取得してから処理を続行
+    chrome.storage.sync.get(['lmStudioModel'], (result) => {
+      const savedModelValue = result.lmStudioModel;
+      
+      // 読み込み中表示
       selectElement.innerHTML = '';
+      const loadingOption = document.createElement('option');
+      loadingOption.textContent = '読み込み中...';
+      selectElement.appendChild(loadingOption);
       
-      // デフォルトオプション
-      const defaultOption = document.createElement('option');
-      defaultOption.value = '';
-      defaultOption.textContent = '-- モデルを選択 --';
-      selectElement.appendChild(defaultOption);
-      
-      if (response && response.models) {
-        response.models.forEach(model => {
-          const option = document.createElement('option');
-          option.value = model.id;
-          option.textContent = `${model.id} ${model.loaded ? '(ロード済み)' : ''}`;
-          selectElement.appendChild(option);
-        });
+      chrome.runtime.sendMessage({
+        action: 'getLMStudioModels',
+        url: baseUrl
+      }, (response) => {
+        selectElement.innerHTML = '';
         
-        // 選択状態を復元（優先順位：現在選択値 > 保存済み設定値）
-        if (currentSelectedValue && currentSelectedValue !== '') {
-          selectElement.value = currentSelectedValue;
-        } else if (chrome.storage && chrome.storage.sync) {
-          chrome.storage.sync.get(['lmStudioModel'], (result) => {
-            if (result.lmStudioModel) {
-              selectElement.value = result.lmStudioModel;
-            }
+        // デフォルトオプション
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- モデルを選択 --';
+        selectElement.appendChild(defaultOption);
+        
+        if (response && response.models) {
+          response.models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.id;
+            option.textContent = `${model.id} ${model.loaded ? '(ロード済み)' : ''}`;
+            selectElement.appendChild(option);
           });
+          
+          // 選択状態を復元（優先順位: 現在選択値 > 保存済み設定値）
+          let valueToRestore = '';
+          if (currentSelectedValue && currentSelectedValue !== '') {
+            valueToRestore = currentSelectedValue;
+          } else if (savedModelValue && savedModelValue !== '') {
+            valueToRestore = savedModelValue;
+          }
+          
+          // 復元する値が実際にオプションに存在するか確認
+          const optionExists = Array.from(selectElement.options).some(option => option.value === valueToRestore);
+          if (optionExists) {
+            selectElement.value = valueToRestore;
+          }
+          
+        } else if (response && response.error) {
+          const errorOption = document.createElement('option');
+          errorOption.textContent = `エラー: ${response.error}`;
+          selectElement.appendChild(errorOption);
+        } else {
+          const noModelsOption = document.createElement('option');
+          noModelsOption.textContent = 'モデルが見つかりません';
+          selectElement.appendChild(noModelsOption);
         }
-      } else if (response && response.error) {
-        const errorOption = document.createElement('option');
-        errorOption.textContent = `エラー: ${response.error}`;
-        selectElement.appendChild(errorOption);
-      } else {
-        const noModelsOption = document.createElement('option');
-        noModelsOption.textContent = 'モデルが見つかりません';
-        selectElement.appendChild(noModelsOption);
-      }
+      });
     });
   }
 });

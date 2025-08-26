@@ -267,7 +267,7 @@ function removeFloatingTranslator() {
 function translateText(text) {
   // 設定された言語を取得
   chrome.storage.sync.get(['targetLanguage'], (result) => {
-    const targetLang = result.targetLanguage || 'en';
+    const targetLang = result.targetLanguage || 'ja';
     
     // バックグラウンドスクリプトに翻訳リクエストを送信
     chrome.runtime.sendMessage({
