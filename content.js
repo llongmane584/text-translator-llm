@@ -2,6 +2,7 @@ let translatorIcon = null;
 let floatingTranslator = null;
 let selectedText = '';
 let selectionRange = null;
+let isResizing = false;
 
 // CSSスタイルをページに注入
 function injectStyles() {
@@ -174,6 +175,19 @@ injectStyles();
 document.addEventListener('mouseup', handleTextSelection);
 document.addEventListener('keyup', handleTextSelection);
 
+// 改行を保持してテキストを安全にHTMLに変換する関数
+function formatTextWithLineBreaks(text) {
+  if (!text) return '';
+  // HTMLエスケープしてから改行を<br>タグに変換
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\n/g, '<br>');
+}
+
 function handleTextSelection(e) {
   // アイコンクリック時は処理をスキップ
   if (e && e.target && translatorIcon && translatorIcon.contains(e.target)) {
@@ -250,7 +264,7 @@ function showFloatingTranslator() {
     <div class="floating-translator-content">
       <div class="text-section">
         <label>原文:</label>
-        <div class="text-content">${selectedText}</div>
+        <div class="text-content">${formatTextWithLineBreaks(selectedText)}</div>
       </div>
       <div class="text-section">
         <label>翻訳結果:</label>
@@ -280,6 +294,17 @@ function showFloatingTranslator() {
   if (closeBtn) closeBtn.addEventListener('click', removeFloatingTranslator);
   if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
   if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
+  
+  // リサイズ操作の検知
+  floatingTranslator.addEventListener('mousedown', (e) => {
+    const rect = floatingTranslator.getBoundingClientRect();
+    const isNearRightEdge = e.clientX > rect.right - 20;
+    const isNearBottomEdge = e.clientY > rect.bottom - 20;
+    
+    if (isNearRightEdge && isNearBottomEdge) {
+      isResizing = true;
+    }
+  });
   
   // 翻訳を実行
   translateText(selectedText);
@@ -322,7 +347,7 @@ function translateText(text) {
 function updateTranslationResult(translation) {
   if (floatingTranslator) {
     const translationElement = floatingTranslator.querySelector('.translation-content');
-    translationElement.textContent = translation;
+    translationElement.innerHTML = formatTextWithLineBreaks(translation);
     translationElement.classList.remove('loading');
   }
 }
@@ -330,11 +355,19 @@ function updateTranslationResult(translation) {
 function copyTranslation() {
   if (floatingTranslator) {
     const translationElement = floatingTranslator.querySelector('.translation-content');
-    const text = translationElement.textContent;
+    // HTMLから<br>タグを改行に変換してテキストとしてコピー
+    const text = translationElement.innerHTML
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&amp;/g, '&');
     
     navigator.clipboard.writeText(text).then(() => {
       // コピー成功の表示
-      const button = floatingTranslator.querySelector('.action-btn');
+      const button = floatingTranslator.querySelector('.copy-btn');
       const originalText = button.textContent;
       button.textContent = 'コピー完了!';
       setTimeout(() => {
@@ -345,10 +378,17 @@ function copyTranslation() {
 }
 
 
-// ページ外クリックで閉じる
+// ページ外クリックで閉じる（リサイズ中は除く）
 document.addEventListener('click', (e) => {
-  if (floatingTranslator && !floatingTranslator.contains(e.target) && !translatorIcon?.contains(e.target)) {
+  if (floatingTranslator && !floatingTranslator.contains(e.target) && !translatorIcon?.contains(e.target) && !isResizing) {
     removeFloatingTranslator();
+  }
+});
+
+// リサイズ終了の検知
+document.addEventListener('mouseup', (e) => {
+  if (isResizing) {
+    isResizing = false;
   }
 });
 
@@ -384,11 +424,11 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
     <div class="floating-translator-content">
       <div class="text-section">
         <label>原文:</label>
-        <div class="text-content">${originalText}</div>
+        <div class="text-content">${formatTextWithLineBreaks(originalText)}</div>
       </div>
       <div class="text-section">
         <label>翻訳結果:</label>
-        <div class="text-content translation-content">${translation}</div>
+        <div class="text-content translation-content">${formatTextWithLineBreaks(translation)}</div>
       </div>
     </div>
     <div class="floating-translator-actions">
@@ -413,4 +453,15 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
   if (closeBtn) closeBtn.addEventListener('click', removeFloatingTranslator);
   if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
   if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
+  
+  // リサイズ操作の検知
+  floatingTranslator.addEventListener('mousedown', (e) => {
+    const rect = floatingTranslator.getBoundingClientRect();
+    const isNearRightEdge = e.clientX > rect.right - 20;
+    const isNearBottomEdge = e.clientY > rect.bottom - 20;
+    
+    if (isNearRightEdge && isNearBottomEdge) {
+      isResizing = true;
+    }
+  });
 }
