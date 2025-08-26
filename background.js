@@ -355,7 +355,7 @@ async function callLMStudio(text, targetLanguage, url, model) {
 chrome.runtime.onInstalled.addListener(() => {
   // 初期設定
   chrome.storage.sync.set({
-    targetLanguage: 'en',
+    targetLanguage: 'ja',
     autoTranslate: true,
     llmProvider: 'ollama',
     ollamaUrl: 'http://localhost:11434',
@@ -375,7 +375,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'translateSelected' && info.selectionText) {
     chrome.storage.sync.get(['targetLanguage'], (result) => {
-      const targetLang = result.targetLanguage || 'en';
+      const targetLang = result.targetLanguage || 'ja';
       
       translateText(info.selectionText, targetLang)
         .then(translation => {
