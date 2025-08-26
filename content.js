@@ -246,6 +246,11 @@ function translateText(text) {
       text: text,
       targetLanguage: targetLang
     }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Runtime error:', chrome.runtime.lastError);
+        updateTranslationResult('拡張機能との接続エラー。ページを再読み込みしてください。');
+        return;
+      }
       if (response && response.translation) {
         updateTranslationResult(response.translation);
       } else if (response && response.error) {

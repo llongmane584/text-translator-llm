@@ -301,6 +301,26 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             action: 'showTranslation',
             originalText: info.selectionText,
             translation: translation
+          }).catch(error => {
+            console.error('Failed to send message to tab:', error);
+            // Content scriptが読み込まれていない場合は、content scriptを注入してから再試行
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              files: ['content.js']
+            }).then(() => {
+              // content scriptの注入後、少し待ってから再送信
+              setTimeout(() => {
+                chrome.tabs.sendMessage(tab.id, {
+                  action: 'showTranslation',
+                  originalText: info.selectionText,
+                  translation: translation
+                }).catch(err => {
+                  console.error('Failed to send message after injection:', err);
+                });
+              }, 100);
+            }).catch(err => {
+              console.error('Failed to inject content script:', err);
+            });
           });
         })
         .catch(error => {
@@ -309,6 +329,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             action: 'showTranslation',
             originalText: info.selectionText,
             translation: `翻訳エラー: ${error.message}`
+          }).catch(err => {
+            console.error('Failed to send error message to tab:', err);
           });
         });
     });
