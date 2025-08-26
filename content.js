@@ -37,13 +37,21 @@ function injectStyles() {
     .floating-translator {
       position: absolute;
       min-width: 300px;
-      max-width: 400px;
+      max-width: 600px;
+      min-height: 200px;
+      max-height: 500px;
+      width: 400px;
+      height: 300px;
       background: white;
       border-radius: 8px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.2);
       z-index: 10001;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       border: 1px solid #dadce0;
+      resize: both;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
     }
     .floating-translator-header {
       padding: 12px 16px;
@@ -77,9 +85,17 @@ function injectStyles() {
     }
     .floating-translator-content {
       padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow: hidden;
     }
     .text-section {
-      margin-bottom: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
     .text-section label {
       display: block;
@@ -96,8 +112,9 @@ function injectStyles() {
       line-height: 1.4;
       color: #333;
       border: 1px solid #e8eaed;
-      max-height: 120px;
+      flex: 1;
       overflow-y: auto;
+      min-height: 60px;
     }
     .translation-content {
       background: #e8f5e8;
@@ -134,6 +151,17 @@ function injectStyles() {
     .primary-btn:hover {
       background: #1557b0;
       border-color: #1557b0;
+    }
+    .floating-translator::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, transparent 50%, #dadce0 50%);
+      cursor: nw-resize;
+      pointer-events: none;
     }
   `;
   document.head.appendChild(style);
