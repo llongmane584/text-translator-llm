@@ -146,7 +146,12 @@ injectStyles();
 document.addEventListener('mouseup', handleTextSelection);
 document.addEventListener('keyup', handleTextSelection);
 
-function handleTextSelection() {
+function handleTextSelection(e) {
+  // アイコンクリック時は処理をスキップ
+  if (e && e.target && translatorIcon && translatorIcon.contains(e.target)) {
+    return;
+  }
+  
   const selection = window.getSelection();
   const text = selection.toString().trim();
   
@@ -169,7 +174,18 @@ function showTranslatorIcon(selection) {
   translatorIcon.style.left = `${rect.right + window.scrollX + 5}px`;
   translatorIcon.style.top = `${rect.top + window.scrollY}px`;
   
-  translatorIcon.addEventListener('click', showFloatingTranslator);
+  // mousedownで先にテキストと範囲を保存し、デフォルト動作を防ぐ
+  translatorIcon.addEventListener('mousedown', (e) => {
+    e.preventDefault(); // クリックによる選択解除を防ぐ
+    e.stopPropagation();
+  });
+  
+  translatorIcon.addEventListener('click', (e) => {
+    console.log('Icon clicked!', selectedText);
+    e.preventDefault();
+    e.stopPropagation();
+    showFloatingTranslator();
+  });
   
   document.body.appendChild(translatorIcon);
   
@@ -187,17 +203,21 @@ function removeTranslatorIcon() {
 }
 
 function showFloatingTranslator() {
+  console.log('showFloatingTranslator called with text:', selectedText);
   removeTranslatorIcon();
   removeFloatingTranslator();
   
-  if (!selectedText) return;
+  if (!selectedText) {
+    console.log('No selected text, returning');
+    return;
+  }
   
   floatingTranslator = document.createElement('div');
   floatingTranslator.className = 'floating-translator';
   floatingTranslator.innerHTML = `
     <div class="floating-translator-header">
       <span class="floating-translator-title">Text Translator LLM</span>
-      <button class="close-btn" onclick="removeFloatingTranslator()">&times;</button>
+      <button class="close-btn">&times;</button>
     </div>
     <div class="floating-translator-content">
       <div class="text-section">
@@ -210,8 +230,8 @@ function showFloatingTranslator() {
       </div>
     </div>
     <div class="floating-translator-actions">
-      <button class="action-btn" onclick="copyTranslation()">コピー</button>
-      <button class="action-btn primary-btn" onclick="removeFloatingTranslator()">閉じる</button>
+      <button class="action-btn copy-btn">コピー</button>
+      <button class="action-btn primary-btn close-translator-btn">閉じる</button>
     </div>
   `;
   
@@ -223,6 +243,15 @@ function showFloatingTranslator() {
   }
   
   document.body.appendChild(floatingTranslator);
+  
+  // イベントリスナーを追加
+  const closeBtn = floatingTranslator.querySelector('.close-btn');
+  const copyBtn = floatingTranslator.querySelector('.copy-btn');
+  const closeTranslatorBtn = floatingTranslator.querySelector('.close-translator-btn');
+  
+  if (closeBtn) closeBtn.addEventListener('click', removeFloatingTranslator);
+  if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
+  if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
   
   // 翻訳を実行
   translateText(selectedText);
@@ -287,9 +316,6 @@ function copyTranslation() {
   }
 }
 
-// グローバル関数として定義（HTML内のonclickで使用）
-window.removeFloatingTranslator = removeFloatingTranslator;
-window.copyTranslation = copyTranslation;
 
 // ページ外クリックで閉じる
 document.addEventListener('click', (e) => {
@@ -325,7 +351,7 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
   floatingTranslator.innerHTML = `
     <div class="floating-translator-header">
       <span class="floating-translator-title">Text Translator LLM</span>
-      <button class="close-btn" onclick="removeFloatingTranslator()">&times;</button>
+      <button class="close-btn">&times;</button>
     </div>
     <div class="floating-translator-content">
       <div class="text-section">
@@ -338,8 +364,8 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
       </div>
     </div>
     <div class="floating-translator-actions">
-      <button class="action-btn" onclick="copyTranslation()">コピー</button>
-      <button class="action-btn primary-btn" onclick="removeFloatingTranslator()">閉じる</button>
+      <button class="action-btn copy-btn">コピー</button>
+      <button class="action-btn primary-btn close-translator-btn">閉じる</button>
     </div>
   `;
   
@@ -350,4 +376,13 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
   floatingTranslator.style.transform = 'translate(-50%, -50%)';
   
   document.body.appendChild(floatingTranslator);
+  
+  // イベントリスナーを追加
+  const closeBtn = floatingTranslator.querySelector('.close-btn');
+  const copyBtn = floatingTranslator.querySelector('.copy-btn');
+  const closeTranslatorBtn = floatingTranslator.querySelector('.close-translator-btn');
+  
+  if (closeBtn) closeBtn.addEventListener('click', removeFloatingTranslator);
+  if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
+  if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
 }
