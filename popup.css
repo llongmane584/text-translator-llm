@@ -237,7 +237,7 @@ header h1 {
   line-height: 1.4;
   color: #333;
   border: 1px solid #e8eaed;
-  max-height: 120px;
+  max-height: 360px;
   overflow-y: auto;
 }
 

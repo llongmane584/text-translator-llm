@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
       'lmStudioUrl',
       'lmStudioModel'
     ], (result) => {
-      targetLanguageSelect.value = result.targetLanguage || 'en';
+      targetLanguageSelect.value = result.targetLanguage || 'ja';
       llmProviderSelect.value = result.llmProvider || 'ollama';
       autoTranslateCheckbox.checked = result.autoTranslate !== false;
       
