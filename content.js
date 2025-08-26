@@ -3,6 +3,28 @@ let floatingTranslator = null;
 let selectedText = '';
 let selectionRange = null;
 let isResizing = false;
+let resizeStartTime = 0;
+let lastResizeEndTime = 0;
+
+// サイズ制限チェック関数
+function checkSizeLimits(element) {
+  if (!element) return;
+  
+  const computedStyle = window.getComputedStyle(element);
+  const currentWidth = parseFloat(computedStyle.width);
+  const currentHeight = parseFloat(computedStyle.height);
+  const maxWidth = parseFloat(computedStyle.maxWidth);
+  const maxHeight = parseFloat(computedStyle.maxHeight);
+  
+  const atMaxWidth = currentWidth >= maxWidth - 5; // 5px の余裕を持たせる
+  const atMaxHeight = currentHeight >= maxHeight - 5;
+  
+  if (atMaxWidth || atMaxHeight) {
+    element.classList.add('at-max-size');
+  } else {
+    element.classList.remove('at-max-size');
+  }
+}
 
 // CSSスタイルをページに注入
 function injectStyles() {
@@ -164,6 +186,17 @@ function injectStyles() {
       cursor: nw-resize;
       pointer-events: none;
     }
+    .floating-translator.resizing {
+      box-shadow: 0 4px 24px rgba(26, 115, 232, 0.3);
+      border-color: #1a73e8;
+    }
+    .floating-translator.at-max-size {
+      box-shadow: 0 4px 16px rgba(234, 67, 53, 0.2);
+      border-color: #ea4335;
+    }
+    .floating-translator.at-max-size::after {
+      background: linear-gradient(135deg, transparent 50%, #ea4335 50%);
+    }
   `;
   document.head.appendChild(style);
 }
@@ -297,12 +330,22 @@ function showFloatingTranslator() {
   
   // リサイズ操作の検知
   floatingTranslator.addEventListener('mousedown', (e) => {
+    // CSSのresizeカーソルをチェック
+    const computedStyle = window.getComputedStyle(e.target);
+    const cursor = computedStyle.cursor;
+    
     const rect = floatingTranslator.getBoundingClientRect();
     const isNearRightEdge = e.clientX > rect.right - 20;
     const isNearBottomEdge = e.clientY > rect.bottom - 20;
     
-    if (isNearRightEdge && isNearBottomEdge) {
+    // リサイズハンドル領域またはresizeカーソルが検出された場合
+    if ((isNearRightEdge && isNearBottomEdge) || 
+        cursor.includes('resize') || cursor.includes('nw-resize') || cursor.includes('se-resize')) {
       isResizing = true;
+      resizeStartTime = Date.now();
+      floatingTranslator.classList.add('resizing');
+      checkSizeLimits(floatingTranslator);
+      console.log('Resize started at', resizeStartTime);
     }
   });
   
@@ -378,10 +421,28 @@ function copyTranslation() {
 }
 
 
-// ページ外クリックで閉じる（リサイズ中は除く）
+// ページ外クリックで閉じる（リサイズ中およびリサイズ直後は除く）
 document.addEventListener('click', (e) => {
-  if (floatingTranslator && !floatingTranslator.contains(e.target) && !translatorIcon?.contains(e.target) && !isResizing) {
+  const now = Date.now();
+  const timeSinceLastResize = now - lastResizeEndTime;
+  const recentlyResized = timeSinceLastResize < 200; // 200ms以内はリサイズ直後とみなす
+  
+  if (floatingTranslator && 
+      !floatingTranslator.contains(e.target) && 
+      !translatorIcon?.contains(e.target) && 
+      !isResizing && 
+      !recentlyResized) {
+    console.log('Closing translator via outside click');
     removeFloatingTranslator();
+  } else if (recentlyResized) {
+    console.log('Skipping close due to recent resize, time since resize:', timeSinceLastResize + 'ms');
+  }
+});
+
+// リサイズ中のサイズ制限チェック
+document.addEventListener('mousemove', (e) => {
+  if (isResizing && floatingTranslator) {
+    checkSizeLimits(floatingTranslator);
   }
 });
 
@@ -389,6 +450,18 @@ document.addEventListener('click', (e) => {
 document.addEventListener('mouseup', (e) => {
   if (isResizing) {
     isResizing = false;
+    lastResizeEndTime = Date.now();
+    const resizeDuration = lastResizeEndTime - resizeStartTime;
+    
+    if (floatingTranslator) {
+      floatingTranslator.classList.remove('resizing');
+      // 最終的なサイズ制限チェック
+      setTimeout(() => {
+        checkSizeLimits(floatingTranslator);
+      }, 50); // わずかな遅延で最終的なサイズを取得
+    }
+    
+    console.log('Resize ended at', lastResizeEndTime, 'duration:', resizeDuration + 'ms');
   }
 });
 
@@ -456,12 +529,22 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
   
   // リサイズ操作の検知
   floatingTranslator.addEventListener('mousedown', (e) => {
+    // CSSのresizeカーソルをチェック
+    const computedStyle = window.getComputedStyle(e.target);
+    const cursor = computedStyle.cursor;
+    
     const rect = floatingTranslator.getBoundingClientRect();
     const isNearRightEdge = e.clientX > rect.right - 20;
     const isNearBottomEdge = e.clientY > rect.bottom - 20;
     
-    if (isNearRightEdge && isNearBottomEdge) {
+    // リサイズハンドル領域またはresizeカーソルが検出された場合
+    if ((isNearRightEdge && isNearBottomEdge) || 
+        cursor.includes('resize') || cursor.includes('nw-resize') || cursor.includes('se-resize')) {
       isResizing = true;
+      resizeStartTime = Date.now();
+      floatingTranslator.classList.add('resizing');
+      checkSizeLimits(floatingTranslator);
+      console.log('Resize started at', resizeStartTime);
     }
   });
 }
