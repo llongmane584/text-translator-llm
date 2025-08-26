@@ -103,7 +103,12 @@ document.addEventListener('DOMContentLoaded', function() {
           reloadBtn.type = 'button';
           reloadBtn.textContent = '更新';
           reloadBtn.className = 'model-reload-btn';
-          reloadBtn.addEventListener('click', () => loadLMStudioModels(input, currentValues.lmStudioUrl));
+          reloadBtn.addEventListener('click', () => {
+            // リアルタイムでURL値を取得
+            const urlInput = document.getElementById('lmStudioUrl');
+            const currentUrl = urlInput ? urlInput.value : (currentValues.lmStudioUrl || 'http://localhost:1234');
+            loadLMStudioModels(input, currentUrl);
+          });
           
           // コンテナ要素を作成してFlexレイアウト適用
           const selectorContainer = document.createElement('div');
@@ -210,6 +215,9 @@ document.addEventListener('DOMContentLoaded', function() {
   function loadLMStudioModels(selectElement, url) {
     const baseUrl = url || 'http://localhost:1234';
     
+    // 現在選択中の値を保存
+    const currentSelectedValue = selectElement.value;
+    
     // 読み込み中表示
     selectElement.innerHTML = '';
     const loadingOption = document.createElement('option');
@@ -236,12 +244,16 @@ document.addEventListener('DOMContentLoaded', function() {
           selectElement.appendChild(option);
         });
         
-        // 現在の設定値を復元
-        chrome.storage.sync.get(['lmStudioModel'], (result) => {
-          if (result.lmStudioModel) {
-            selectElement.value = result.lmStudioModel;
-          }
-        });
+        // 選択状態を復元（優先順位：現在選択値 > 保存済み設定値）
+        if (currentSelectedValue && currentSelectedValue !== '') {
+          selectElement.value = currentSelectedValue;
+        } else if (chrome.storage && chrome.storage.sync) {
+          chrome.storage.sync.get(['lmStudioModel'], (result) => {
+            if (result.lmStudioModel) {
+              selectElement.value = result.lmStudioModel;
+            }
+          });
+        }
       } else if (response && response.error) {
         const errorOption = document.createElement('option');
         errorOption.textContent = `エラー: ${response.error}`;
