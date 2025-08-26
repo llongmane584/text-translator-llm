@@ -9,16 +9,16 @@ let lastResizeEndTime = 0;
 // サイズ制限チェック関数
 function checkSizeLimits(element) {
   if (!element) return;
-  
+
   const computedStyle = window.getComputedStyle(element);
   const currentWidth = parseFloat(computedStyle.width);
   const currentHeight = parseFloat(computedStyle.height);
   const maxWidth = parseFloat(computedStyle.maxWidth);
   const maxHeight = parseFloat(computedStyle.maxHeight);
-  
+
   const atMaxWidth = currentWidth >= maxWidth - 5; // 5px の余裕を持たせる
   const atMaxHeight = currentHeight >= maxHeight - 5;
-  
+
   if (atMaxWidth || atMaxHeight) {
     element.classList.add('at-max-size');
   } else {
@@ -26,10 +26,55 @@ function checkSizeLimits(element) {
   }
 }
 
+// テキスト量に基づいてダイアログの適切な高さを計算
+function calculateDialogHeight(text) {
+  if (!text) return 300; // デフォルト高さ
+
+  // 1行あたりの文字数を推定（日本語・英語混在を考慮）
+  const averageCharsPerLine = 50;
+  const textLines = text.split('\n');
+  let estimatedLines = 0;
+
+  textLines.forEach(line => {
+    const lineLength = line.length;
+    estimatedLines += Math.max(1, Math.ceil(lineLength / averageCharsPerLine));
+  });
+
+  // 1行あたりの高さ（フォントサイズ14px + line-height 1.4）
+  const lineHeight = 14 * 1.4; // 約19.6px
+  const textContentHeight = estimatedLines * lineHeight;
+  
+  // 固定要素の高さを計算
+  const headerHeight = 49; // ヘッダー部分
+  const labelHeight = 18; // ラベル（12px + margin 6px）
+  const paddingHeight = 20; // text-content padding (10px × 2)
+  const sectionGap = 16; // section間のgap
+  const contentPadding = 32; // content padding (16px × 2)
+  const actionsHeight = 45; // アクションボタン部分
+  const borderHeight = 2; // 上下のborder
+  
+  // 各セクション（原文・翻訳結果）の必要高さ
+  const sectionHeight = labelHeight + paddingHeight + Math.max(60, textContentHeight); // 最小60px
+  
+  // 合計高さを計算
+  const totalHeight = headerHeight + contentPadding + (sectionHeight * 2) + sectionGap + actionsHeight + borderHeight;
+  
+  // 最小200px、最大500pxで制限
+  return Math.min(Math.max(totalHeight, 200), 500);
+}
+
+// ダイアログサイズを調整
+function adjustDialogSize(element, text) {
+  if (!element || !text) return;
+  
+  const newHeight = calculateDialogHeight(text);
+  element.style.height = `${newHeight}px`;
+}
+
 // CSSスタイルをページに注入
 function injectStyles() {
   if (document.getElementById('translator-styles')) return;
-  
+
   const style = document.createElement('style');
   style.id = 'translator-styles';
   style.textContent = `
@@ -69,7 +114,7 @@ function injectStyles() {
       border-radius: 8px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.2);
       z-index: 10001;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       border: 1px solid #dadce0;
       resize: both;
       overflow: auto;
@@ -138,6 +183,7 @@ function injectStyles() {
       flex: 1;
       overflow-y: auto;
       min-height: 60px;
+      font-weight: 500;
     }
     .translation-content {
       background: #e8f5e8;
@@ -226,13 +272,13 @@ function handleTextSelection(e) {
   if (e && e.target && translatorIcon && translatorIcon.contains(e.target)) {
     return;
   }
-  
+
   const selection = window.getSelection();
   const text = selection.toString().trim();
-  
+
   // 既存のアイコンを削除
   removeTranslatorIcon();
-  
+
   if (text && text.length > 0) {
     selectedText = text;
     selectionRange = selection.getRangeAt(0).cloneRange();
@@ -243,27 +289,27 @@ function handleTextSelection(e) {
 function showTranslatorIcon(selection) {
   const range = selection.getRangeAt(0);
   const rect = range.getBoundingClientRect();
-  
+
   translatorIcon = document.createElement('div');
   translatorIcon.className = 'translator-icon';
   translatorIcon.style.left = `${rect.right + window.scrollX + 5}px`;
   translatorIcon.style.top = `${rect.top + window.scrollY}px`;
-  
+
   // mousedownで先にテキストと範囲を保存し、デフォルト動作を防ぐ
   translatorIcon.addEventListener('mousedown', (e) => {
     e.preventDefault(); // クリックによる選択解除を防ぐ
     e.stopPropagation();
   });
-  
+
   translatorIcon.addEventListener('click', (e) => {
     console.log('Icon clicked!', selectedText);
     e.preventDefault();
     e.stopPropagation();
     showFloatingTranslator();
   });
-  
+
   document.body.appendChild(translatorIcon);
-  
+
   // 3秒後に自動削除
   setTimeout(() => {
     removeTranslatorIcon();
@@ -281,12 +327,12 @@ function showFloatingTranslator() {
   console.log('showFloatingTranslator called with text:', selectedText);
   removeTranslatorIcon();
   removeFloatingTranslator();
-  
+
   if (!selectedText) {
     console.log('No selected text, returning');
     return;
   }
-  
+
   floatingTranslator = document.createElement('div');
   floatingTranslator.className = 'floating-translator';
   floatingTranslator.innerHTML = `
@@ -309,38 +355,41 @@ function showFloatingTranslator() {
       <button class="action-btn primary-btn close-translator-btn">閉じる</button>
     </div>
   `;
-  
+
   // 位置を設定
   if (selectionRange) {
     const rect = selectionRange.getBoundingClientRect();
     floatingTranslator.style.left = `${rect.left + window.scrollX}px`;
     floatingTranslator.style.top = `${rect.bottom + window.scrollY + 10}px`;
   }
-  
+
   document.body.appendChild(floatingTranslator);
-  
+
+  // ダイアログサイズを調整
+  adjustDialogSize(floatingTranslator, selectedText);
+
   // イベントリスナーを追加
   const closeBtn = floatingTranslator.querySelector('.close-btn');
   const copyBtn = floatingTranslator.querySelector('.copy-btn');
   const closeTranslatorBtn = floatingTranslator.querySelector('.close-translator-btn');
-  
+
   if (closeBtn) closeBtn.addEventListener('click', removeFloatingTranslator);
   if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
   if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
-  
+
   // リサイズ操作の検知
   floatingTranslator.addEventListener('mousedown', (e) => {
     // CSSのresizeカーソルをチェック
     const computedStyle = window.getComputedStyle(e.target);
     const cursor = computedStyle.cursor;
-    
+
     const rect = floatingTranslator.getBoundingClientRect();
     const isNearRightEdge = e.clientX > rect.right - 20;
     const isNearBottomEdge = e.clientY > rect.bottom - 20;
-    
+
     // リサイズハンドル領域またはresizeカーソルが検出された場合
-    if ((isNearRightEdge && isNearBottomEdge) || 
-        cursor.includes('resize') || cursor.includes('nw-resize') || cursor.includes('se-resize')) {
+    if ((isNearRightEdge && isNearBottomEdge) ||
+      cursor.includes('resize') || cursor.includes('nw-resize') || cursor.includes('se-resize')) {
       isResizing = true;
       resizeStartTime = Date.now();
       floatingTranslator.classList.add('resizing');
@@ -348,7 +397,7 @@ function showFloatingTranslator() {
       console.log('Resize started at', resizeStartTime);
     }
   });
-  
+
   // 翻訳を実行
   translateText(selectedText);
 }
@@ -364,7 +413,7 @@ function translateText(text) {
   // 設定された言語を取得
   chrome.storage.sync.get(['targetLanguage'], (result) => {
     const targetLang = result.targetLanguage || 'ja';
-    
+
     // バックグラウンドスクリプトに翻訳リクエストを送信
     chrome.runtime.sendMessage({
       action: 'translate',
@@ -407,7 +456,7 @@ function copyTranslation() {
       .replace(/&quot;/g, '"')
       .replace(/&#x27;/g, "'")
       .replace(/&amp;/g, '&');
-    
+
     navigator.clipboard.writeText(text).then(() => {
       // コピー成功の表示
       const button = floatingTranslator.querySelector('.copy-btn');
@@ -426,12 +475,12 @@ document.addEventListener('click', (e) => {
   const now = Date.now();
   const timeSinceLastResize = now - lastResizeEndTime;
   const recentlyResized = timeSinceLastResize < 200; // 200ms以内はリサイズ直後とみなす
-  
-  if (floatingTranslator && 
-      !floatingTranslator.contains(e.target) && 
-      !translatorIcon?.contains(e.target) && 
-      !isResizing && 
-      !recentlyResized) {
+
+  if (floatingTranslator &&
+    !floatingTranslator.contains(e.target) &&
+    !translatorIcon?.contains(e.target) &&
+    !isResizing &&
+    !recentlyResized) {
     console.log('Closing translator via outside click');
     removeFloatingTranslator();
   } else if (recentlyResized) {
@@ -452,7 +501,7 @@ document.addEventListener('mouseup', (e) => {
     isResizing = false;
     lastResizeEndTime = Date.now();
     const resizeDuration = lastResizeEndTime - resizeStartTime;
-    
+
     if (floatingTranslator) {
       floatingTranslator.classList.remove('resizing');
       // 最終的なサイズ制限チェック
@@ -460,7 +509,7 @@ document.addEventListener('mouseup', (e) => {
         checkSizeLimits(floatingTranslator);
       }, 50); // わずかな遅延で最終的なサイズを取得
     }
-    
+
     console.log('Resize ended at', lastResizeEndTime, 'duration:', resizeDuration + 'ms');
   }
 });
@@ -486,7 +535,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 function showFloatingTranslatorWithTranslation(originalText, translation) {
   removeTranslatorIcon();
   removeFloatingTranslator();
-  
+
   floatingTranslator = document.createElement('div');
   floatingTranslator.className = 'floating-translator';
   floatingTranslator.innerHTML = `
@@ -509,37 +558,40 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
       <button class="action-btn primary-btn close-translator-btn">閉じる</button>
     </div>
   `;
-  
+
   // 画面中央に配置
   floatingTranslator.style.position = 'fixed';
   floatingTranslator.style.left = '50%';
   floatingTranslator.style.top = '50%';
   floatingTranslator.style.transform = 'translate(-50%, -50%)';
-  
+
   document.body.appendChild(floatingTranslator);
-  
+
+  // ダイアログサイズを調整
+  adjustDialogSize(floatingTranslator, originalText);
+
   // イベントリスナーを追加
   const closeBtn = floatingTranslator.querySelector('.close-btn');
   const copyBtn = floatingTranslator.querySelector('.copy-btn');
   const closeTranslatorBtn = floatingTranslator.querySelector('.close-translator-btn');
-  
+
   if (closeBtn) closeBtn.addEventListener('click', removeFloatingTranslator);
   if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
   if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
-  
+
   // リサイズ操作の検知
   floatingTranslator.addEventListener('mousedown', (e) => {
     // CSSのresizeカーソルをチェック
     const computedStyle = window.getComputedStyle(e.target);
     const cursor = computedStyle.cursor;
-    
+
     const rect = floatingTranslator.getBoundingClientRect();
     const isNearRightEdge = e.clientX > rect.right - 20;
     const isNearBottomEdge = e.clientY > rect.bottom - 20;
-    
+
     // リサイズハンドル領域またはresizeカーソルが検出された場合
-    if ((isNearRightEdge && isNearBottomEdge) || 
-        cursor.includes('resize') || cursor.includes('nw-resize') || cursor.includes('se-resize')) {
+    if ((isNearRightEdge && isNearBottomEdge) ||
+      cursor.includes('resize') || cursor.includes('nw-resize') || cursor.includes('se-resize')) {
       isResizing = true;
       resizeStartTime = Date.now();
       floatingTranslator.classList.add('resizing');
