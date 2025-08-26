@@ -13,6 +13,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // 非同期レスポンスを返すためにtrueを返す
     return true;
   }
+  
+  if (request.action === 'getLMStudioModels') {
+    getLMStudioModels(request.url)
+      .then(models => {
+        sendResponse({ models: models });
+      })
+      .catch(error => {
+        console.error('Get models error:', error);
+        sendResponse({ error: error.message });
+      });
+    
+    // 非同期レスポンスを返すためにtrueを返す
+    return true;
+  }
 });
 
 async function translateText(text, targetLanguage) {
@@ -36,6 +50,28 @@ async function translateText(text, targetLanguage) {
     return translation;
   } catch (error) {
     throw new Error(`翻訳に失敗しました: ${error.message}`);
+  }
+}
+
+// LM Studio モデル一覧を取得
+async function getLMStudioModels(url) {
+  const baseUrl = url || 'http://localhost:1234';
+  const requestUrl = `${baseUrl}/api/v0/models`;
+  
+  try {
+    const response = await fetch(requestUrl);
+    
+    if (!response.ok) {
+      throw new Error(`LM Studio models API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('LM Studioサーバーに接続できません');
+    }
+    throw error;
   }
 }
 
@@ -239,34 +275,80 @@ async function callLMStudio(text, targetLanguage, url, model) {
   const baseUrl = url || 'http://localhost:1234';
   const modelName = model || 'local-model';
   
-  const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a professional translator. Translate the given text to ${targetLanguage} accurately and naturally. Return ONLY the translation without any explanations, comments, or additional text.`
-        },
-        {
-          role: 'user',
-          content: text
-        }
-      ],
-      max_tokens: 500,
-      temperature: 0.1
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`LM Studio エラー: ${response.status}`);
+  if (!modelName) {
+    throw new Error('LM Studioモデル名が設定されていません');
   }
+  
+  const prompt = `You are a professional translator. Translate the given text to ${targetLanguage} accurately and naturally. Return ONLY the translation without any explanations, comments, or additional text.`;
+  
+  const requestUrl = `${baseUrl}/api/v0/chat/completions`;
+  const requestBody = {
+    model: modelName,
+    messages: [
+      {
+        role: 'system',
+        content: prompt
+      },
+      {
+        role: 'user',
+        content: text
+      }
+    ],
+    max_tokens: 500,
+    temperature: 0.1,
+    stream: false
+  };
 
-  const data = await response.json();
-  return data.choices[0].message.content.trim();
+  console.log('=== LM Studio API Debug ===');
+  console.log('Request URL:', requestUrl);
+  console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+  console.log('Model:', modelName);
+  console.log('Base URL:', baseUrl);
+  
+  try {
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log('Response Status:', response.status);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('Error Response Body:', errorText);
+      
+      if (response.status === 404) {
+        throw new Error(`LM Studioモデル '${modelName}' が見つかりません。モデルをロードするか、設定を確認してください。`);
+      }
+      if (response.status === 400) {
+        throw new Error(`LM Studio API リクエストエラー (400): ${errorText}`);
+      }
+      if (response.status === 500) {
+        throw new Error(`LM Studio サーバーエラー (500): ${errorText}`);
+      }
+      throw new Error(`LM Studio API エラー: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Response Data:', data);
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.log('Invalid response - missing choices or message field');
+      throw new Error('LM Studioからの応答が無効です');
+    }
+    
+    console.log('Translation Result:', data.choices[0].message.content);
+    return data.choices[0].message.content.trim();
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('LM Studioサーバーに接続できません。サーバーが起動していることを確認してください。');
+    }
+    throw error;
+  }
 }
 
 // 拡張機能インストール時の初期設定
