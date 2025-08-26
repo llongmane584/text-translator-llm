@@ -5,6 +5,11 @@ let selectionRange = null;
 let isResizing = false;
 let resizeStartTime = 0;
 let lastResizeEndTime = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dialogStartX = 0;
+let dialogStartY = 0;
 
 // サイズ制限チェック関数
 function checkSizeLimits(element) {
@@ -105,11 +110,11 @@ function injectStyles() {
     .floating-translator {
       position: absolute;
       min-width: 300px;
-      max-width: 600px;
+      max-width: 70vw;
       min-height: 200px;
-      max-height: 500px;
-      width: 400px;
-      height: 300px;
+      max-height: 70vh;
+      width: min(400px, 50vw);
+      height: min(300px, 40vh);
       background: white;
       border-radius: 8px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.2);
@@ -129,6 +134,8 @@ function injectStyles() {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: move;
+      user-select: none;
     }
     .floating-translator-title {
       font-size: 14px;
@@ -377,8 +384,13 @@ function showFloatingTranslator() {
   if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
   if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
 
-  // リサイズ操作の検知
+  // ドラッグとリサイズ操作の検知
   floatingTranslator.addEventListener('mousedown', (e) => {
+    // 閉じるボタンをクリックした場合はドラッグしない
+    if (e.target.classList.contains('close-btn')) {
+      return;
+    }
+
     // CSSのresizeカーソルをチェック
     const computedStyle = window.getComputedStyle(e.target);
     const cursor = computedStyle.cursor;
@@ -395,6 +407,20 @@ function showFloatingTranslator() {
       floatingTranslator.classList.add('resizing');
       checkSizeLimits(floatingTranslator);
       console.log('Resize started at', resizeStartTime);
+    }
+    // ヘッダー部分でのドラッグ開始
+    else if (e.target.closest('.floating-translator-header')) {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      
+      // 現在のダイアログ位置を取得
+      const style = window.getComputedStyle(floatingTranslator);
+      dialogStartX = parseInt(style.left) || 0;
+      dialogStartY = parseInt(style.top) || 0;
+      
+      e.preventDefault();
+      console.log('Drag started');
     }
   });
 
@@ -480,6 +506,7 @@ document.addEventListener('click', (e) => {
     !floatingTranslator.contains(e.target) &&
     !translatorIcon?.contains(e.target) &&
     !isResizing &&
+    !isDragging &&
     !recentlyResized) {
     console.log('Closing translator via outside click');
     removeFloatingTranslator();
@@ -488,14 +515,40 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// リサイズ中のサイズ制限チェック
+// ドラッグとリサイズ中の処理
 document.addEventListener('mousemove', (e) => {
   if (isResizing && floatingTranslator) {
     checkSizeLimits(floatingTranslator);
   }
+  
+  if (isDragging && floatingTranslator) {
+    // ドラッグ中の位置計算
+    const deltaX = e.clientX - dragStartX;
+    const deltaY = e.clientY - dragStartY;
+    
+    let newX = dialogStartX + deltaX;
+    let newY = dialogStartY + deltaY;
+    
+    // 画面境界チェック
+    const rect = floatingTranslator.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // 左端制限（最低50px表示）
+    newX = Math.max(-rect.width + 50, newX);
+    // 右端制限
+    newX = Math.min(viewportWidth - 50, newX);
+    // 上端制限（最低30px表示）
+    newY = Math.max(-rect.height + 30, newY);
+    // 下端制限
+    newY = Math.min(viewportHeight - 30, newY);
+    
+    floatingTranslator.style.left = `${newX}px`;
+    floatingTranslator.style.top = `${newY}px`;
+  }
 });
 
-// リサイズ終了の検知
+// ドラッグとリサイズ終了の検知
 document.addEventListener('mouseup', (e) => {
   if (isResizing) {
     isResizing = false;
@@ -511,6 +564,11 @@ document.addEventListener('mouseup', (e) => {
     }
 
     console.log('Resize ended at', lastResizeEndTime, 'duration:', resizeDuration + 'ms');
+  }
+  
+  if (isDragging) {
+    isDragging = false;
+    console.log('Drag ended');
   }
 });
 
@@ -579,8 +637,13 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
   if (copyBtn) copyBtn.addEventListener('click', copyTranslation);
   if (closeTranslatorBtn) closeTranslatorBtn.addEventListener('click', removeFloatingTranslator);
 
-  // リサイズ操作の検知
+  // ドラッグとリサイズ操作の検知
   floatingTranslator.addEventListener('mousedown', (e) => {
+    // 閉じるボタンをクリックした場合はドラッグしない
+    if (e.target.classList.contains('close-btn')) {
+      return;
+    }
+
     // CSSのresizeカーソルをチェック
     const computedStyle = window.getComputedStyle(e.target);
     const cursor = computedStyle.cursor;
@@ -597,6 +660,20 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
       floatingTranslator.classList.add('resizing');
       checkSizeLimits(floatingTranslator);
       console.log('Resize started at', resizeStartTime);
+    }
+    // ヘッダー部分でのドラッグ開始
+    else if (e.target.closest('.floating-translator-header')) {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      
+      // 現在のダイアログ位置を取得
+      const style = window.getComputedStyle(floatingTranslator);
+      dialogStartX = parseInt(style.left) || 0;
+      dialogStartY = parseInt(style.top) || 0;
+      
+      e.preventDefault();
+      console.log('Drag started');
     }
   });
 }
