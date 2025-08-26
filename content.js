@@ -48,7 +48,7 @@ function calculateDialogHeight(text) {
   // 1行あたりの高さ（フォントサイズ14px + line-height 1.4）
   const lineHeight = 14 * 1.4; // 約19.6px
   const textContentHeight = estimatedLines * lineHeight;
-  
+
   // 固定要素の高さを計算
   const headerHeight = 49; // ヘッダー部分
   const labelHeight = 18; // ラベル（12px + margin 6px）
@@ -57,13 +57,13 @@ function calculateDialogHeight(text) {
   const contentPadding = 32; // content padding (16px × 2)
   const actionsHeight = 45; // アクションボタン部分
   const borderHeight = 2; // 上下のborder
-  
+
   // 各セクション（原文・翻訳結果）の必要高さ
   const sectionHeight = labelHeight + paddingHeight + Math.max(60, textContentHeight); // 最小60px
-  
+
   // 合計高さを計算
   const totalHeight = headerHeight + contentPadding + (sectionHeight * 2) + sectionGap + actionsHeight + borderHeight;
-  
+
   // 最小200px、最大500pxで制限
   return Math.min(Math.max(totalHeight, 200), 500);
 }
@@ -71,7 +71,7 @@ function calculateDialogHeight(text) {
 // ダイアログサイズを調整
 function adjustDialogSize(element, text) {
   if (!element || !text) return;
-  
+
   const newHeight = calculateDialogHeight(text);
   element.style.height = `${newHeight}px`;
 }
@@ -108,7 +108,7 @@ function injectStyles() {
       font-weight: bold;
     }
     .floating-translator {
-      position: absolute;
+      position: fixed;
       min-width: 300px;
       max-width: 70vw;
       min-height: 200px;
@@ -208,7 +208,7 @@ function injectStyles() {
       justify-content: flex-end;
     }
     .action-btn {
-      padding: 6px 12px;
+      padding: 2px 6px 6px 8px;
       border: 1px solid #dadce0;
       border-radius: 4px;
       background: white;
@@ -363,11 +363,11 @@ function showFloatingTranslator() {
     </div>
   `;
 
-  // 位置を設定
+  // 位置を設定（fixedなのでスクロール位置は不要）
   if (selectionRange) {
     const rect = selectionRange.getBoundingClientRect();
-    floatingTranslator.style.left = `${rect.left + window.scrollX}px`;
-    floatingTranslator.style.top = `${rect.bottom + window.scrollY + 10}px`;
+    floatingTranslator.style.left = `${rect.left}px`;
+    floatingTranslator.style.top = `${rect.bottom + 10}px`;
   }
 
   document.body.appendChild(floatingTranslator);
@@ -413,12 +413,12 @@ function showFloatingTranslator() {
       isDragging = true;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
-      
+
       // 現在のダイアログ位置を取得
       const style = window.getComputedStyle(floatingTranslator);
       dialogStartX = parseInt(style.left) || 0;
       dialogStartY = parseInt(style.top) || 0;
-      
+
       e.preventDefault();
       console.log('Drag started');
     }
@@ -520,29 +520,29 @@ document.addEventListener('mousemove', (e) => {
   if (isResizing && floatingTranslator) {
     checkSizeLimits(floatingTranslator);
   }
-  
+
   if (isDragging && floatingTranslator) {
     // ドラッグ中の位置計算
     const deltaX = e.clientX - dragStartX;
     const deltaY = e.clientY - dragStartY;
-    
+
     let newX = dialogStartX + deltaX;
     let newY = dialogStartY + deltaY;
-    
-    // 画面境界チェック
+
+    // 画面境界チェック（fixed positionなので viewport 基準）
     const rect = floatingTranslator.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
+
     // 左端制限（最低50px表示）
     newX = Math.max(-rect.width + 50, newX);
     // 右端制限
     newX = Math.min(viewportWidth - 50, newX);
     // 上端制限（最低30px表示）
     newY = Math.max(-rect.height + 30, newY);
-    // 下端制限
-    newY = Math.min(viewportHeight - 30, newY);
-    
+    // 下端制限（ダイアログ下端が画面下端を超えないように）
+    newY = Math.min(viewportHeight - rect.height + 30, newY);
+
     floatingTranslator.style.left = `${newX}px`;
     floatingTranslator.style.top = `${newY}px`;
   }
@@ -565,7 +565,7 @@ document.addEventListener('mouseup', (e) => {
 
     console.log('Resize ended at', lastResizeEndTime, 'duration:', resizeDuration + 'ms');
   }
-  
+
   if (isDragging) {
     isDragging = false;
     console.log('Drag ended');
@@ -666,12 +666,12 @@ function showFloatingTranslatorWithTranslation(originalText, translation) {
       isDragging = true;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
-      
+
       // 現在のダイアログ位置を取得
       const style = window.getComputedStyle(floatingTranslator);
       dialogStartX = parseInt(style.left) || 0;
       dialogStartY = parseInt(style.top) || 0;
-      
+
       e.preventDefault();
       console.log('Drag started');
     }
