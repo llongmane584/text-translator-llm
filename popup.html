@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Translator LLM</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Text Translator LLM</h1>
+    </header>
+    
+    <main>
+      <div class="settings-section">
+        <div class="language-selector">
+          <label for="targetLanguage">翻訳先言語:</label>
+          <select id="targetLanguage">
+            <option value="en">英語</option>
+            <option value="ja">日本語</option>
+            <option value="ko">韓国語</option>
+            <option value="zh">中国語</option>
+            <option value="es">スペイン語</option>
+            <option value="fr">フランス語</option>
+            <option value="de">ドイツ語</option>
+          </select>
+        </div>
+        
+        <div class="provider-selector">
+          <label for="llmProvider">LLMプロバイダー:</label>
+          <select id="llmProvider">
+            <option value="openai">OpenAI (ChatGPT)</option>
+            <option value="claude">Anthropic (Claude)</option>
+            <option value="gemini">Google (Gemini)</option>
+            <option value="ollama">Ollama (ローカル)</option>
+            <option value="lmstudio">LM Studio (ローカル)</option>
+          </select>
+        </div>
+        
+        <div id="providerSettings" class="provider-settings">
+          <!-- 動的に生成される設定項目 -->
+        </div>
+        
+        <div class="auto-translate-toggle">
+          <label>
+            <input type="checkbox" id="autoTranslate" checked>
+            自動翻訳を有効にする
+          </label>
+        </div>
+      </div>
+      
+      <div class="instructions">
+        <p>テキストを選択すると翻訳アイコンが表示されます。アイコンをクリックして翻訳結果を確認してください。</p>
+      </div>
+      
+      <div class="status">
+        <span id="statusMessage">準備完了</span>
+      </div>
+    </main>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
