@@ -451,10 +451,10 @@ function showFloatingTranslator() {
 
 function removeFloatingTranslator() {
   if (floatingTranslator) {
-  floatingTranslator.remove();
-  floatingTranslator = null;
-  console.log('Floating translator removed; clearing selection state to avoid auto-retrigger');
-  clearSelectionState();
+    floatingTranslator.remove();
+    floatingTranslator = null;
+    console.log('Floating translator removed; clearing selection state to avoid auto-retrigger');
+    clearSelectionState();
   }
 }
 
