@@ -1,125 +1,132 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dialog Sizing Test</title>
-    <style>
-        body {
-            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        .test-section {
-            margin: 20px 0;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .test-text {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-size: 14px;
-            line-height: 1.4;
-            border: 1px solid #e8eaed;
-        }
-        button {
-            background: #1a73e8;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover {
-            background: #1557b0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dialog Sizing Test</title>
+  <style>
+    body {
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .test-text {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 14px;
+      line-height: 1.4;
+      border: 1px solid #e8eaed;
+    }
+
+    button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #1557b0;
+    }
+  </style>
 </head>
+
 <body>
-    <h1>ダイアログサイズ調整テスト</h1>
-    
-    <div class="test-section">
-        <h3>短いテキスト</h3>
-        <div class="test-text" id="short-text">Hello World!</div>
-        <button onclick="testDialog('short-text')">テスト</button>
-        <div>期待結果: コンパクトなダイアログ（最小高さ200px程度）</div>
-    </div>
+  <h1>ダイアログサイズ調整テスト</h1>
 
-    <div class="test-section">
-        <h3>中程度のテキスト</h3>
-        <div class="test-text" id="medium-text">これは中程度の長さのテキストサンプルです。複数行にわたるテキストの場合、ダイアログがどのように調整されるかをテストします。改行も含まれています。
-翻訳結果のエリアも同じサイズが確保されるはずです。</div>
-        <button onclick="testDialog('medium-text')">テスト</button>
-        <div>期待結果: 適度なサイズのダイアログ（300px程度）</div>
-    </div>
+  <div class="test-section">
+    <h3>短いテキスト</h3>
+    <div class="test-text" id="short-text">Hello World!</div>
+    <button onclick="testDialog('short-text')">テスト</button>
+    <div>期待結果: コンパクトなダイアログ（最小高さ200px程度）</div>
+  </div>
 
-    <div class="test-section">
-        <h3>長いテキスト</h3>
-        <div class="test-text" id="long-text">これは非常に長いテキストのサンプルです。複数の段落にわたって続く長文の場合、ダイアログがどのように適切にサイズ調整されるかをテストします。
+  <div class="test-section">
+    <h3>中程度のテキスト</h3>
+    <div class="test-text" id="medium-text">これは中程度の長さのテキストサンプルです。複数行にわたるテキストの場合、ダイアログがどのように調整されるかをテストします。改行も含まれています。
+      翻訳結果のエリアも同じサイズが確保されるはずです。</div>
+    <button onclick="testDialog('medium-text')">テスト</button>
+    <div>期待結果: 適度なサイズのダイアログ（300px程度）</div>
+  </div>
 
-このようなケースでは、ダイアログが最大高さ（500px）まで拡大し、それ以上は スクロール可能な状態になることを期待しています。
+  <div class="test-section">
+    <h3>長いテキスト</h3>
+    <div class="test-text" id="long-text">これは非常に長いテキストのサンプルです。複数の段落にわたって続く長文の場合、ダイアログがどのように適切にサイズ調整されるかをテストします。
 
-翻訳結果エリアも十分なスペースが確保され、「翻訳結果:」ラベルと原文エリアが重ならないようになるはずです。
+      このようなケースでは、ダイアログが最大高さ（500px）まで拡大し、それ以上は スクロール可能な状態になることを期待しています。
 
-また、ユーザーは手動でダイアログのサイズを変更することも可能で、リサイズ機能も正常に動作することを確認する必要があります。</div>
-        <button onclick="testDialog('long-text')">テスト</button>
-        <div>期待結果: 最大サイズのダイアログ（500px）、スクロール可能</div>
-    </div>
+      翻訳結果エリアも十分なスペースが確保され、「翻訳結果:」ラベルと原文エリアが重ならないようになるはずです。
 
-    <div class="test-section">
-        <h3>複数行の短いテキスト</h3>
-        <div class="test-text" id="multiline-text">行1
-行2
-行3
-行4
-行5</div>
-        <button onclick="testDialog('multiline-text')">テスト</button>
-        <div>期待結果: 改行数を考慮した適切な高さ</div>
-    </div>
+      また、ユーザーは手動でダイアログのサイズを変更することも可能で、リサイズ機能も正常に動作することを確認する必要があります。</div>
+    <button onclick="testDialog('long-text')">テスト</button>
+    <div>期待結果: 最大サイズのダイアログ（500px）、スクロール可能</div>
+  </div>
 
-    <script>
-        // calculateDialogHeight関数のテスト版
-        function calculateDialogHeight(text) {
-            if (!text) return 300;
+  <div class="test-section">
+    <h3>複数行の短いテキスト</h3>
+    <div class="test-text" id="multiline-text">行1
+      行2
+      行3
+      行4
+      行5</div>
+    <button onclick="testDialog('multiline-text')">テスト</button>
+    <div>期待結果: 改行数を考慮した適切な高さ</div>
+  </div>
 
-            const averageCharsPerLine = 50;
-            const textLines = text.split('\n');
-            let estimatedLines = 0;
+  <script>
+    // calculateDialogHeight関数のテスト版
+    function calculateDialogHeight(text) {
+      if (!text) return 300;
 
-            textLines.forEach(line => {
-                const lineLength = line.length;
-                estimatedLines += Math.max(1, Math.ceil(lineLength / averageCharsPerLine));
-            });
+      const averageCharsPerLine = 50;
+      const textLines = text.split('\n');
+      let estimatedLines = 0;
 
-            const lineHeight = 14 * 1.4;
-            const textContentHeight = estimatedLines * lineHeight;
-            
-            const headerHeight = 49;
-            const labelHeight = 18;
-            const paddingHeight = 20;
-            const sectionGap = 16;
-            const contentPadding = 32;
-            const actionsHeight = 45;
-            const borderHeight = 2;
-            
-            const sectionHeight = labelHeight + paddingHeight + Math.max(60, textContentHeight);
-            const totalHeight = headerHeight + contentPadding + (sectionHeight * 2) + sectionGap + actionsHeight + borderHeight;
-            
-            return Math.min(Math.max(totalHeight, 200), 500);
-        }
+      textLines.forEach(line => {
+        const lineLength = line.length;
+        estimatedLines += Math.max(1, Math.ceil(lineLength / averageCharsPerLine));
+      });
 
-        function testDialog(elementId) {
-            const element = document.getElementById(elementId);
-            const text = element.textContent;
-            const calculatedHeight = calculateDialogHeight(text);
-            
-            alert(`テキスト: "${text.substring(0, 50)}..."\n計算された高さ: ${calculatedHeight}px\n推定行数: ${Math.ceil(text.split('\n').reduce((total, line) => total + Math.max(1, Math.ceil(line.length / 50)), 0))}`);
-        }
-    </script>
+      const lineHeight = 14 * 1.4;
+      const textContentHeight = estimatedLines * lineHeight;
+
+      const headerHeight = 49;
+      const labelHeight = 18;
+      const paddingHeight = 20;
+      const sectionGap = 16;
+      const contentPadding = 32;
+      const actionsHeight = 45;
+      const borderHeight = 2;
+
+      const sectionHeight = labelHeight + paddingHeight + Math.max(60, textContentHeight);
+      const totalHeight = headerHeight + contentPadding + (sectionHeight * 2) + sectionGap + actionsHeight + borderHeight;
+
+      return Math.min(Math.max(totalHeight, 200), 500);
+    }
+
+    function testDialog(elementId) {
+      const element = document.getElementById(elementId);
+      const text = element.textContent;
+      const calculatedHeight = calculateDialogHeight(text);
+
+      alert(`テキスト: "${text.substring(0, 50)}..."\n計算された高さ: ${calculatedHeight}px\n推定行数: ${Math.ceil(text.split('\n').reduce((total, line) => total + Math.max(1, Math.ceil(line.length / 50)), 0))}`);
+    }
+  </script>
 </body>
+
 </html>

@@ -9,11 +9,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.error('Translation error:', error);
         sendResponse({ error: error.message });
       });
-    
+
     // 非同期レスポンスを返すためにtrueを返す
     return true;
   }
-  
+
   if (request.action === 'getLMStudioModels') {
     getLMStudioModels(request.url)
       .then(models => {
@@ -23,7 +23,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.error('Get models error:', error);
         sendResponse({ error: error.message });
       });
-    
+
     // 非同期レスポンスを返すためにtrueを返す
     return true;
   }
@@ -36,7 +36,7 @@ async function translateText(text, targetLanguage) {
       chrome.storage.sync.get([
         'llmProvider',
         'openaiApiKey',
-        'claudeApiKey', 
+        'claudeApiKey',
         'geminiApiKey',
         'ollamaUrl',
         'ollamaModel',
@@ -57,14 +57,14 @@ async function translateText(text, targetLanguage) {
 async function getLMStudioModels(url) {
   const baseUrl = url || 'http://localhost:1234';
   const requestUrl = `${baseUrl}/api/v0/models`;
-  
+
   try {
     const response = await fetch(requestUrl);
-    
+
     if (!response.ok) {
       throw new Error(`LM Studio models API エラー: ${response.status}`);
     }
-    
+
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -91,19 +91,19 @@ async function callTranslationAPI(text, targetLanguage, provider, settings) {
   switch (provider) {
     case 'openai':
       return await callOpenAI(text, targetLangName, settings.openaiApiKey);
-    
+
     case 'claude':
       return await callClaude(text, targetLangName, settings.claudeApiKey);
-    
+
     case 'gemini':
       return await callGemini(text, targetLangName, settings.geminiApiKey);
-    
+
     case 'ollama':
       return await callOllama(text, targetLangName, settings.ollamaUrl, settings.ollamaModel);
-    
+
     case 'lmstudio':
       return await callLMStudio(text, targetLangName, settings.lmStudioUrl, settings.lmStudioModel);
-    
+
     default:
       throw new Error('未対応のプロバイダーです');
   }
@@ -112,7 +112,7 @@ async function callTranslationAPI(text, targetLanguage, provider, settings) {
 // OpenAI API
 async function callOpenAI(text, targetLanguage, apiKey) {
   if (!apiKey) throw new Error('OpenAI APIキーが設定されていません');
-  
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -147,7 +147,7 @@ async function callOpenAI(text, targetLanguage, apiKey) {
 // Claude API
 async function callClaude(text, targetLanguage, apiKey) {
   if (!apiKey) throw new Error('Claude APIキーが設定されていません');
-  
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -174,7 +174,7 @@ async function callClaude(text, targetLanguage, apiKey) {
 // Gemini API
 async function callGemini(text, targetLanguage, apiKey) {
   if (!apiKey) throw new Error('Gemini APIキーが設定されていません');
-  
+
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
@@ -203,13 +203,13 @@ async function callGemini(text, targetLanguage, apiKey) {
 async function callOllama(text, targetLanguage, url, model) {
   const baseUrl = url || 'http://localhost:11434';
   const modelName = model || 'gemma2:9b';
-  
+
   if (!modelName) {
     throw new Error('Ollamaモデル名が設定されていません');
   }
-  
+
   const prompt = `You are a professional translator. Translate the following text to ${targetLanguage} accurately and naturally. Return ONLY the translation without any explanations, comments, or additional text.\n\nText to translate: ${text}`;
-  
+
   const requestUrl = `${baseUrl}/api/generate`;
   const requestBody = {
     model: modelName,
@@ -226,7 +226,7 @@ async function callOllama(text, targetLanguage, url, model) {
   console.log('Request Body:', JSON.stringify(requestBody, null, 2));
   console.log('Model:', modelName);
   console.log('Base URL:', baseUrl);
-  
+
   try {
     const response = await fetch(requestUrl, {
       method: 'POST',
@@ -242,7 +242,7 @@ async function callOllama(text, targetLanguage, url, model) {
     if (!response.ok) {
       const errorText = await response.text();
       console.log('Error Response Body:', errorText);
-      
+
       if (response.status === 404) {
         throw new Error(`Ollamaモデル '${modelName}' が見つかりません。モデルをダウンロードするか、設定を確認してください。`);
       }
@@ -254,12 +254,12 @@ async function callOllama(text, targetLanguage, url, model) {
 
     const data = await response.json();
     console.log('Response Data:', data);
-    
+
     if (!data.response) {
       console.log('Invalid response - missing response field');
       throw new Error('Ollamaからの応答が無効です');
     }
-    
+
     console.log('Translation Result:', data.response);
     return data.response.trim();
   } catch (error) {
@@ -274,13 +274,13 @@ async function callOllama(text, targetLanguage, url, model) {
 async function callLMStudio(text, targetLanguage, url, model) {
   const baseUrl = url || 'http://localhost:1234';
   const modelName = model || 'local-model';
-  
+
   if (!modelName) {
     throw new Error('LM Studioモデル名が設定されていません');
   }
-  
+
   const prompt = `You are a professional translator. Translate the given text to ${targetLanguage} accurately and naturally. Return ONLY the translation without any explanations, comments, or additional text.`;
-  
+
   const requestUrl = `${baseUrl}/api/v0/chat/completions`;
   const requestBody = {
     model: modelName,
@@ -304,7 +304,7 @@ async function callLMStudio(text, targetLanguage, url, model) {
   console.log('Request Body:', JSON.stringify(requestBody, null, 2));
   console.log('Model:', modelName);
   console.log('Base URL:', baseUrl);
-  
+
   try {
     const response = await fetch(requestUrl, {
       method: 'POST',
@@ -320,7 +320,7 @@ async function callLMStudio(text, targetLanguage, url, model) {
     if (!response.ok) {
       const errorText = await response.text();
       console.log('Error Response Body:', errorText);
-      
+
       if (response.status === 404) {
         throw new Error(`LM Studioモデル '${modelName}' が見つかりません。モデルをロードするか、設定を確認してください。`);
       }
@@ -335,12 +335,12 @@ async function callLMStudio(text, targetLanguage, url, model) {
 
     const data = await response.json();
     console.log('Response Data:', data);
-    
+
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.log('Invalid response - missing choices or message field');
       throw new Error('LM Studioからの応答が無効です');
     }
-    
+
     console.log('Translation Result:', data.choices[0].message.content);
     return data.choices[0].message.content.trim();
   } catch (error) {
@@ -376,7 +376,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'translateSelected' && info.selectionText) {
     chrome.storage.sync.get(['targetLanguage'], (result) => {
       const targetLang = result.targetLanguage || 'ja';
-      
+
       translateText(info.selectionText, targetLang)
         .then(translation => {
           chrome.tabs.sendMessage(tab.id, {
