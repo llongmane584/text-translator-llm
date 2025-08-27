@@ -276,7 +276,11 @@ function formatTextWithLineBreaks(text) {
 
 function handleTextSelection(e) {
   // アイコンクリック時は処理をスキップ
-  if (e && e.target && translatorIcon && translatorIcon.contains(e.target)) {
+  // アイコンクリックまたは翻訳ダイアログ内でのクリック時は処理をスキップ
+  if (e && e.target && (
+    (translatorIcon && translatorIcon.contains(e.target)) ||
+    (floatingTranslator && floatingTranslator.contains(e.target))
+  )) {
     return;
   }
 
@@ -447,9 +451,23 @@ function showFloatingTranslator() {
 
 function removeFloatingTranslator() {
   if (floatingTranslator) {
-    floatingTranslator.remove();
-    floatingTranslator = null;
+  floatingTranslator.remove();
+  floatingTranslator = null;
+  console.log('Floating translator removed; clearing selection state to avoid auto-retrigger');
+  clearSelectionState();
   }
+}
+
+// Clear selection state to prevent auto-translate from retriggering when dialog closes
+function clearSelectionState() {
+  try {
+    const selection = window.getSelection();
+    if (selection) selection.removeAllRanges();
+  } catch (err) {
+    // ignore
+  }
+  selectedText = '';
+  selectionRange = null;
 }
 
 function translateText(text) {
