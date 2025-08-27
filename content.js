@@ -280,6 +280,11 @@ function handleTextSelection(e) {
     return;
   }
 
+  // リサイズ中またはドラッグ中の場合は処理をスキップ
+  if (isResizing || isDragging) {
+    return;
+  }
+
   const selection = window.getSelection();
   const text = selection.toString().trim();
 
@@ -289,7 +294,19 @@ function handleTextSelection(e) {
   if (text && text.length > 0) {
     selectedText = text;
     selectionRange = selection.getRangeAt(0).cloneRange();
-    showTranslatorIcon(selection);
+
+    // autoTranslate設定を確認
+    chrome.storage.sync.get(['autoTranslate'], (result) => {
+      const autoTranslateEnabled = result.autoTranslate !== false;
+
+      if (autoTranslateEnabled) {
+        // 自動翻訳がONの場合：直接翻訳を実行
+        showFloatingTranslator();
+      } else {
+        // 自動翻訳がOFFの場合：アイコンを表示
+        showTranslatorIcon(selection);
+      }
+    });
   }
 }
 
