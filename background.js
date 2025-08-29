@@ -356,7 +356,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // 初期設定
   chrome.storage.sync.set({
     targetLanguage: 'ja',
-    autoTranslate: true,
+    autoTranslate: false,
     llmProvider: 'ollama',
     ollamaUrl: 'http://localhost:11434',
     ollamaModel: 'gemma2:9b',
