@@ -6,11 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Chrome extension that provides text translation using multiple LLM providers. Users can select text on any webpage to trigger a translation interface similar to Google Translate.
 
-## Repository Information
-
-- Repository URL: git@llongmane584:llongmane584/text-translator-llm.git
-- Main branch: main
-
 ## Architecture
 
 ### Core Components
